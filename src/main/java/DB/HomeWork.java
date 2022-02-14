@@ -11,28 +11,30 @@ public class HomeWork {
 
     public static void main(String[] args) throws SQLException {
         try (Connection connection = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD)) {
-            /*
-            createCuratorTable(connection);
-            createGroupTable(connection);
-            createStudentTable(connection);
 
-            insertDataIntoCuratorTable(connection, "Петров Петр Петрович");
-            insertDataIntoGroupTable(connection, "Группа 3", "3");
-            insertDataIntoStudentTable(connection, "Студент 15", "3", "Ж");
+//            createCuratorTable(connection);
+//            createGroupTable(connection);
+//            createStudentTable(connection);
 
-            updateDataIntoCuratorTable(connection, "Сидоров Остап Бенедиктович", "3");
-            updateDataIntoStudentTable(connection, "Студент 14", "15");
+//            List<String> curators = List.of("Петров Петр Петрович", ";sdfgljkd;flg", "sdfsfdsd");
+//            insertDataIntoCuratorTable(connection, curators);
+//            insertDataIntoGroupTable(connection, "Группа 3", "3");
+//            insertDataIntoStudentTable(connection, "Студент 15", "3", "Ж");
+//
+//            updateDataIntoCuratorTable(connection, "Сидоров Остап Бенедиктович", "3");
+//            updateDataIntoStudentTable(connection, "Студент 14", "15");
 
-            getAllStudentInfo(connection);
+            printAllStudentInfo(connection);
             System.out.println();
-            getCountOfStudent(connection);
+            printCountOfStudent(connection);
             System.out.println();
-            getGirlsFromStudentTable(connection);
+            printGirlsFromStudentTable(connection);
             System.out.println();
-            updateCuratorIdInGroup(connection, "3", "3");
-            updateCuratorIdInGroup(connection, "1", "4");
-            getGroupWithCurator(connection);*/
-            getStudentFromGroup(connection, "Группа 1");
+//            updateCuratorIdInGroup(connection, "3", "3");
+//            updateCuratorIdInGroup(connection, "1", "4");
+            printGroupWithCurator(connection);
+            System.out.println();
+            printStudentFromGroup(connection, "Группа 1");
         }
 
     }
@@ -66,10 +68,9 @@ public class HomeWork {
                     "from student";
 
     private static final String SELECT_GIRLS_FROM_STUDENT =
-            "select s.id, s.name, s.sex, g.name " +
-                    "from student s " +
-                    "join groupp g on s.id_group = g.id " +
-                    "where s.sex = 'Ж'";
+            "select count(id) " +
+                    "from student " +
+                    "where sex = 'Ж'";
 
     private static final String INSERT_INTO_CURATOR =
             "INSERT INTO Curator (fio) VALUES(?)";
@@ -119,65 +120,52 @@ public class HomeWork {
     }
 
     // вывод информацию о всех студентах включая название группы и имя куратора
-    public static void getAllStudentInfo(Connection connection) throws SQLException {
+    public static void printAllStudentInfo(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(SELECT_ALL_STUDENT_INFO);
-            List<Student> students = new ArrayList<>();
 
             while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String studentName = resultSet.getString(2);
-                String sex = resultSet.getString(3);
-                String groupName = resultSet.getString(4);
-                String curatorName = resultSet.getString(5);
-
-                Student student = new Student(id, studentName, sex, groupName, curatorName);
-                students.add(student);
+                for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+                    String columnName = resultSet.getMetaData().getColumnName(i);
+                    String columnValue = resultSet.getString(i);
+                    System.out.println(columnName + " : " + columnValue);
+                }
             }
-            students.forEach(System.out::println);
         }
     }
 
     //вывод на экран количество студентов
-    public static void getCountOfStudent(Connection connection) throws SQLException {
+    public static void printCountOfStudent(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(COUNT_OF_STUDETS);
 
-            List<Student> students = new ArrayList<>();
-            while (resultSet.next()) {
-                Student student = new Student();
-                students.add(student);
-            }
-            students.forEach(System.out::println);
+            resultSet.next();
+            int counter = resultSet.getInt(1);
+            System.out.printf("Количество студентов : %s", counter);
         }
     }
 
     //вывод студенток
-    public static void getGirlsFromStudentTable(Connection connection) throws SQLException {
+    public static void printGirlsFromStudentTable(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(SELECT_GIRLS_FROM_STUDENT);
-            List<Student> students = new ArrayList<>();
 
-            while (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String studentName = resultSet.getString(2);
-                String sex = resultSet.getString(3);
-                String groupName = resultSet.getString(4);
-
-
-                Student student = new Student(id, studentName, sex, groupName);
-                students.add(student);
-            }
-            students.forEach(System.out::println);
+            resultSet.next();
+            int counter = resultSet.getInt(1);
+            System.out.printf("Количество студенток : %s", counter);
         }
     }
 
-    public static void insertDataIntoCuratorTable(Connection connection, String fio) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(INSERT_INTO_CURATOR)) {
-            preparedStatement.setString(1, fio);
-            int insertedRowNumb = preparedStatement.executeUpdate();
-            System.out.println("Inserted rows number: " + insertedRowNumb);
-        }
+    public static void insertDataIntoCuratorTable(Connection connection, List<String> curators) throws SQLException {
+        curators.forEach(s -> {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(INSERT_INTO_CURATOR)) {
+                preparedStatement.setString(1, s);
+                int insertedRowNumb = preparedStatement.executeUpdate();
+                System.out.println("Inserted rows number: " + insertedRowNumb);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        });
     }
 
     public static void insertDataIntoGroupTable(Connection connection, String name, String idCurator) throws SQLException {
@@ -228,7 +216,7 @@ public class HomeWork {
     }
 
     //вывод списка групп с их кураторами
-    public static void getGroupWithCurator(Connection connection) throws SQLException {
+    public static void printGroupWithCurator(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(SELECT_GROUP_WITH_CURATOR);
             List<Student> group = new ArrayList<>();
@@ -247,29 +235,41 @@ public class HomeWork {
     }
 
     //вывод на экран студентов из определенной группы(поиск по имени группы)
-    public static void getStudentFromGroup(Connection connection, String groupName) throws SQLException {
+    public static void printStudentFromGroup(Connection connection, String groupName) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(SELECT_STUDENT_FROM_GROUP)) {
             preparedStatement.setString(1, groupName);
-        }
-    }
-
-    public static void getStudentFromGroupOne(Connection connection, String groupName) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(SELECT_STUDENT_FROM_GROUP);
-            List<Student> studentsFromGroup = new ArrayList<>();
-
-            while (resultSet.next()) {
-                int idStudent = resultSet.getInt(1);
-                String studentName = resultSet.getString(2);
-                int idGroup = resultSet.getInt(3);
-                String sex = resultSet.getString(4);
-
-                Student student = new Student(idStudent, studentName, sex, idGroup);
-                studentsFromGroup.add(student);
-                studentsFromGroup.forEach(System.out::println);
+            try {
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(SELECT_STUDENT_FROM_GROUP);
+                while (resultSet.next()) {
+                    for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+                        String columnName = resultSet.getMetaData().getColumnName(i);
+                        String columnValue = resultSet.getString(i);
+                        System.out.println(columnName + " : " + columnValue);
+                    }
+                }
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
             }
-
         }
+
+//    public static void printStudentFromGroupOne(Connection connection, String groupName) throws SQLException {
+//        try (Statement statement = connection.createStatement()) {
+//            ResultSet resultSet = statement.executeQuery(SELECT_STUDENT_FROM_GROUP);
+//            List<Student> studentsFromGroup = new ArrayList<>();
+//
+//            while (resultSet.next()) {
+//                int idStudent = resultSet.getInt(1);
+//                String studentName = resultSet.getString(2);
+//                int idGroup = resultSet.getInt(3);
+//                String sex = resultSet.getString(4);
+//
+//                Student student = new Student(idStudent, studentName, sex, idGroup);
+//                studentsFromGroup.add(student);
+//                studentsFromGroup.forEach(System.out::println);
+//            }
+//
+//        }
     }
 }
 
